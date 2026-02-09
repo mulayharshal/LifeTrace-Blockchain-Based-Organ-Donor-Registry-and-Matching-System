@@ -1,0 +1,125 @@
+package com.lifetrace.backend.blockchain;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.crypto.Credentials;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.Contract;
+import org.web3j.tx.gas.ContractGasProvider;
+
+public class LifeTraceRegistryContract extends Contract {
+
+    public static final String BINARY = "0x";
+
+    protected LifeTraceRegistryContract(
+            String contractAddress,
+            Web3j web3j,
+            Credentials credentials,
+            ContractGasProvider gasProvider
+    ) {
+        super(BINARY, contractAddress, web3j, credentials, gasProvider);
+    }
+
+    @Override
+    protected String resolveContractAddress(String contractAddress) {
+        return contractAddress;
+    }
+
+    public static LifeTraceRegistryContract load(
+            String contractAddress,
+            Web3j web3j,
+            Credentials credentials,
+            ContractGasProvider gasProvider
+    ) {
+        return new LifeTraceRegistryContract(
+                contractAddress,
+                web3j,
+                credentials,
+                gasProvider
+        );
+    }
+
+    // ===============================
+    // READ DONOR CONSENT
+    // ===============================
+    public List<Type> getDonorConsent(BigInteger donorId) throws Exception {
+        return executeCallMultipleValueReturn(
+                new org.web3j.abi.datatypes.Function(
+                        "getDonorConsent",
+                        Arrays.asList(new Uint256(donorId)),
+                        Arrays.asList(
+                                new TypeReference<Utf8String>() {},
+                                new TypeReference<Bool>() {},
+                                new TypeReference<Uint256>() {}
+                        )
+                )
+        );
+    }
+
+    // ===============================
+    // READ ORGAN ALLOCATION  🔥 ADDED
+    // ===============================
+    public List<Type> getOrganAllocation(BigInteger organId) throws Exception {
+        return executeCallMultipleValueReturn(
+                new org.web3j.abi.datatypes.Function(
+                        "getOrganAllocation",
+                        Arrays.asList(new Uint256(organId)),
+                        Arrays.asList(
+                                new TypeReference<Uint256>() {},  // organId
+                                new TypeReference<Uint256>() {},  // donorId
+                                new TypeReference<Uint256>() {},  // hospitalId
+                                new TypeReference<Uint256>() {}   // timestamp
+                        )
+                )
+        );
+    }
+
+    // ===============================
+    // WRITE DONOR CONSENT
+    // ===============================
+    public TransactionReceipt storeDonorConsent(
+            BigInteger donorId,
+            String ipfsHash
+    ) throws Exception {
+        return executeRemoteCallTransaction(
+                new org.web3j.abi.datatypes.Function(
+                        "storeDonorConsent",
+                        Arrays.asList(
+                                new Uint256(donorId),
+                                new Utf8String(ipfsHash)
+                        ),
+                        Collections.emptyList()
+                )
+        ).send();
+    }
+
+    // ===============================
+    // WRITE ORGAN ALLOCATION
+    // ===============================
+    public TransactionReceipt storeOrganAllocation(
+            BigInteger organId,
+            BigInteger donorId,
+            BigInteger hospitalId
+    ) throws Exception {
+        return executeRemoteCallTransaction(
+                new org.web3j.abi.datatypes.Function(
+                        "storeOrganAllocation",
+                        Arrays.asList(
+                                new Uint256(organId),
+                                new Uint256(donorId),
+                                new Uint256(hospitalId)
+                        ),
+                        Collections.emptyList()
+                )
+        ).send();
+    }
+}
