@@ -1,0 +1,44 @@
+.consent-page {
+  background: #F8FAFC;
+  min-height: calc(100vh - 65px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.consent-card {
+  background: white;
+  width: 500px;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.consent-card h2 {
+  margin-bottom: 10px;
+}
+
+.consent-card p {
+  margin-bottom: 25px;
+  color: #64748B;
+}
+
+.upload-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background: #1E3A8A;
+}
+
+.message {
+  margin-top: 15px;
+  color: #16A34A;
+}
