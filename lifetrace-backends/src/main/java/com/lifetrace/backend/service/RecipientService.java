@@ -8,6 +8,7 @@ import com.lifetrace.backend.model.User;
 import com.lifetrace.backend.repository.HospitalRepository;
 import com.lifetrace.backend.repository.RecipientRepository;
 import com.lifetrace.backend.repository.UserRepository;
+import com.lifetrace.backend.util.RecipientStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -36,14 +37,15 @@ public class RecipientService {
         Hospital hospital = hospitalRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Hospital not registered"));
 
-        // 🔴 APPROVAL CHECK
         if (!hospital.isApproved()) {
             throw new UnauthorizedException("Hospital is not approved by admin");
         }
 
         recipient.setHospital(hospital);
         recipient.setLocation(hospital.getAddress());
-        recipient.setStatus("WAITING");
+
+        // ✅ ENUM FIX
+        recipient.setStatus(RecipientStatus.WAITING);
 
         Recipient savedRecipient = recipientRepository.save(recipient);
 

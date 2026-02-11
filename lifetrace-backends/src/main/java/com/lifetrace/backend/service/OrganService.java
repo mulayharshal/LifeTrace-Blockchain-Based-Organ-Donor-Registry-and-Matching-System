@@ -5,11 +5,12 @@ import com.lifetrace.backend.dto.RegisterOrganRequest;
 import com.lifetrace.backend.exception.ResourceNotFoundException;
 import com.lifetrace.backend.model.*;
 import com.lifetrace.backend.repository.*;
+import com.lifetrace.backend.util.OrganStatus;
+import com.lifetrace.backend.util.RecipientStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class OrganService {
     private final UserRepository userRepository;
     private final BlockchainService blockchainService;
     private final EmailService emailService;
+    private final TransplantCaseService transplantCaseService;
 
     // ============================================================
     // MULTI ORGAN REGISTER
@@ -47,8 +49,6 @@ public class OrganService {
             throw new RuntimeException("Hospital is not approved by admin");
         }
 
-
-
         Donor donor = donorRepository.findById(request.getDonorId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -56,8 +56,8 @@ public class OrganService {
                         )
                 );
 
-        if(hospital.getId()!=donor.getDeclaredByHospitalId()){
-            Exception exc=new IllegalAccessException("Only the hospital register orgns who uploaded the death");
+        if (!hospital.getId().equals(donor.getDeclaredByHospitalId())) {
+            throw new RuntimeException("Only declaring hospital can register organs");
         }
 
         List<Organ> savedOrgans = new ArrayList<>();
@@ -68,17 +68,16 @@ public class OrganService {
             organ.setOrganType(item.getOrganType());
             organ.setBloodGroup(donor.getBloodGroup());
             organ.setCondition(item.getCondition());
-            organ.setStatus("AVAILABLE");
+            organ.setStatus(OrganStatus.AVAILABLE);
             organ.setDonorId(donor.getId());
             organ.setLocation(hospital.getAddress());
-//            organ.setUrgencyLevel(request.getUrgencyLevel());
             organ.setHospital(hospital);
 
             Organ savedOrgan = organRepository.save(organ);
 
             donor.setOrgansRegistered(true);
             donorRepository.save(donor);
-            // 🔥 Run matching when organ is added
+
             tryMatchByOrgan(savedOrgan);
 
             savedOrgans.add(savedOrgan);
@@ -96,7 +95,7 @@ public class OrganService {
                 .findByOrganTypeAndBloodGroupAndStatus(
                         organ.getOrganType(),
                         organ.getBloodGroup(),
-                        "WAITING"
+                        RecipientStatus.WAITING
                 );
 
         if (recipients.isEmpty()) return;
@@ -130,7 +129,7 @@ public class OrganService {
             }
         }
 
-        // 4️⃣ Fallback first
+        // 4️⃣ Fallback
         allocateOrgan(organ, recipients.get(0));
     }
 
@@ -143,12 +142,11 @@ public class OrganService {
                 .findByOrganTypeAndBloodGroupAndStatus(
                         recipient.getOrganType(),
                         recipient.getBloodGroup(),
-                        "AVAILABLE"
+                        OrganStatus.AVAILABLE
                 );
 
         if (organs.isEmpty()) return;
 
-        // 1️⃣ Same location
         for (Organ organ : organs) {
             if (organ.getLocation() != null &&
                     organ.getLocation().equalsIgnoreCase(recipient.getLocation())) {
@@ -158,33 +156,31 @@ public class OrganService {
             }
         }
 
-        // 2️⃣ Fallback
         allocateOrgan(organs.get(0), recipient);
     }
 
     // ============================================================
-    // SAFE ALLOCATION
+    // SAFE ALLOCATION + CREATE TRANSPLANT CASE
     // ============================================================
     public void allocateOrgan(Organ organ, Recipient recipient) {
 
-        organ.setStatus("ALLOCATED");
+        organ.setStatus(OrganStatus.ALLOCATED);
         organ.setRecipient(recipient);
-        recipient.setStatus("MATCHED");
+
+        recipient.setStatus(RecipientStatus.MATCHED);
 
         organRepository.save(organ);
         recipientRepository.save(recipient);
 
-        try {
+        // 🔥 CREATE TRANSPLANT CASE
+        transplantCaseService.createCase(organ, recipient);
 
-            TransactionReceipt receipt = blockchainService.storeOrganAllocation(
+        try {
+            blockchainService.storeOrganAllocation(
                     organ.getId(),
                     organ.getDonorId(),
                     recipient.getHospital().getId()
             );
-
-            organ.setBlockchainTxHash(receipt.getTransactionHash());
-            organRepository.save(organ);
-
         } catch (Exception e) {
             throw new RuntimeException("Blockchain transaction failed", e);
         }

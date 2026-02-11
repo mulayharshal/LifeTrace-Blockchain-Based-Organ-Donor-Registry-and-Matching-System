@@ -48,10 +48,29 @@ public class LifeTraceRegistryContract extends Contract {
         );
     }
 
-    // ===============================
-    // READ DONOR CONSENT
-    // ===============================
+    // ============================================================
+    // DONOR CONSENT
+    // ============================================================
+
+    public TransactionReceipt storeDonorConsent(
+            BigInteger donorId,
+            String ipfsHash
+    ) throws Exception {
+
+        return executeRemoteCallTransaction(
+                new org.web3j.abi.datatypes.Function(
+                        "storeDonorConsent",
+                        Arrays.asList(
+                                new Uint256(donorId),
+                                new Utf8String(ipfsHash)
+                        ),
+                        Collections.emptyList()
+                )
+        ).send();
+    }
+
     public List<Type> getDonorConsent(BigInteger donorId) throws Exception {
+
         return executeCallMultipleValueReturn(
                 new org.web3j.abi.datatypes.Function(
                         "getDonorConsent",
@@ -65,51 +84,16 @@ public class LifeTraceRegistryContract extends Contract {
         );
     }
 
-    // ===============================
-    // READ ORGAN ALLOCATION  🔥 ADDED
-    // ===============================
-    public List<Type> getOrganAllocation(BigInteger organId) throws Exception {
-        return executeCallMultipleValueReturn(
-                new org.web3j.abi.datatypes.Function(
-                        "getOrganAllocation",
-                        Arrays.asList(new Uint256(organId)),
-                        Arrays.asList(
-                                new TypeReference<Uint256>() {},  // organId
-                                new TypeReference<Uint256>() {},  // donorId
-                                new TypeReference<Uint256>() {},  // hospitalId
-                                new TypeReference<Uint256>() {}   // timestamp
-                        )
-                )
-        );
-    }
+    // ============================================================
+    // ORGAN ALLOCATION
+    // ============================================================
 
-    // ===============================
-    // WRITE DONOR CONSENT
-    // ===============================
-    public TransactionReceipt storeDonorConsent(
-            BigInteger donorId,
-            String ipfsHash
-    ) throws Exception {
-        return executeRemoteCallTransaction(
-                new org.web3j.abi.datatypes.Function(
-                        "storeDonorConsent",
-                        Arrays.asList(
-                                new Uint256(donorId),
-                                new Utf8String(ipfsHash)
-                        ),
-                        Collections.emptyList()
-                )
-        ).send();
-    }
-
-    // ===============================
-    // WRITE ORGAN ALLOCATION
-    // ===============================
     public TransactionReceipt storeOrganAllocation(
             BigInteger organId,
             BigInteger donorId,
             BigInteger hospitalId
     ) throws Exception {
+
         return executeRemoteCallTransaction(
                 new org.web3j.abi.datatypes.Function(
                         "storeOrganAllocation",
@@ -121,5 +105,57 @@ public class LifeTraceRegistryContract extends Contract {
                         Collections.emptyList()
                 )
         ).send();
+    }
+
+    public List<Type> getOrganAllocation(BigInteger organId) throws Exception {
+
+        return executeCallMultipleValueReturn(
+                new org.web3j.abi.datatypes.Function(
+                        "getOrganAllocation",
+                        Arrays.asList(new Uint256(organId)),
+                        Arrays.asList(
+                                new TypeReference<Uint256>() {},
+                                new TypeReference<Uint256>() {},
+                                new TypeReference<Uint256>() {},
+                                new TypeReference<Uint256>() {}
+                        )
+                )
+        );
+    }
+
+    // ============================================================
+    // SURGERY RESULT
+    // ============================================================
+
+    public TransactionReceipt storeSurgeryResult(
+            BigInteger caseId,
+            boolean success
+    ) throws Exception {
+
+        return executeRemoteCallTransaction(
+                new org.web3j.abi.datatypes.Function(
+                        "storeSurgeryResult",
+                        Arrays.asList(
+                                new Uint256(caseId),
+                                new Bool(success)
+                        ),
+                        Collections.emptyList()
+                )
+        ).send();
+    }
+
+    public List<Type> getSurgeryResult(BigInteger caseId) throws Exception {
+
+        return executeCallMultipleValueReturn(
+                new org.web3j.abi.datatypes.Function(
+                        "getSurgeryResult",
+                        Arrays.asList(new Uint256(caseId)),
+                        Arrays.asList(
+                                new TypeReference<Uint256>() {},
+                                new TypeReference<Bool>() {},
+                                new TypeReference<Uint256>() {}
+                        )
+                )
+        );
     }
 }

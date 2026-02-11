@@ -28,7 +28,7 @@ public class BlockchainAuditController {
         );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_HOSPITAL')")
     @GetMapping("/verify-allocation/{organId}")
     public ResponseEntity<Map<String, Object>> verifyOrganAllocation(
             @PathVariable Long organId) {

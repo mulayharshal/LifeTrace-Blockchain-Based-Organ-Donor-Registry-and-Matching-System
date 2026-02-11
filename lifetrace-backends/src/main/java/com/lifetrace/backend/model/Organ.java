@@ -1,6 +1,7 @@
 package com.lifetrace.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.lifetrace.backend.util.OrganStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,18 +18,18 @@ public class Organ {
     private Long id;
 
     private String organType;
+
     private String bloodGroup;
 
     @Column(name = "organ_condition")
     private String condition;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrganStatus status;
 
     private Long donorId;
 
-    // NEW MATCHING FIELDS
     private String location;
-//    private String urgencyLevel;
 
     @Column(name = "blockchain_tx_hash")
     private String blockchainTxHash;

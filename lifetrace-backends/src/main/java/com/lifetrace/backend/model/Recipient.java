@@ -1,6 +1,7 @@
 package com.lifetrace.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.lifetrace.backend.util.RecipientStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,13 +26,14 @@ public class Recipient {
     @Column(nullable = false)
     private Integer age;
 
-    private String gender;        // NEW
+    private String gender;
 
-    private String location;      // NEW (Pune / Mumbai)
+    private String location;
 
-    private String urgencyLevel;  // NEW (LOW / MEDIUM / HIGH)
+    private String urgencyLevel;
 
-    private String status; // WAITING / MATCHED
+    @Enumerated(EnumType.STRING)
+    private RecipientStatus status;
 
     @ManyToOne
     @JoinColumn(name = "hospital_id", nullable = false)
