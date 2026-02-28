@@ -67,4 +67,10 @@ public class TransplantCaseController {
         return ResponseEntity.ok(transplantCaseService.getTimeline(caseId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','HOSPITAL')")
+    @GetMapping("/cases")
+    public ResponseEntity<?> getAllCases() {
+        return ResponseEntity.ok(transplantCaseService.getAllCases());
+    }
+
 }
