@@ -30,14 +30,14 @@ public class OrganExpiryService {
     public void checkExpiredOrgans() {
 
         List<TransplantCase> activeCases =
-                transplantCaseRepository.findByStatus(TransplantStatus.RETRIEVED);
+                transplantCaseRepository.findByStatus(TransplantStatus.IN_TRANSIT);
 
         for (TransplantCase transplantCase : activeCases) {
 
-            if (transplantCase.getRetrievalTime() == null) continue;
+            if (transplantCase.getDispatchTime() == null) continue;
 
             long hoursPassed = Duration.between(
-                    transplantCase.getRetrievalTime(),
+                    transplantCase.getDispatchTime(),
                     LocalDateTime.now()
             ).toHours();
 

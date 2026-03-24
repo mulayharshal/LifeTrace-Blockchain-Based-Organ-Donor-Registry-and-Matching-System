@@ -1,113 +1,72 @@
-import axios from "axios";
+import api from '../api/axios';
 
-const API_BASE = "http://localhost:8080";
+// Helper to remove '/api' from the baseURL specifically for the hospital endpoints
+// Because Spring Boot defines them directly as /hospital/... instead of /api/hospital/...
+const getHospitalBaseUrl = () => {
+  const base = api.defaults.baseURL || 'http://localhost:8080/api';
+  return base.replace(/\/api\/?$/, '');
+};
 
-const getAuthHeader = () => ({
+const getBaseConfig = () => ({ baseURL: getHospitalBaseUrl() });
+
+const getMultipartConfig = () => ({
+  baseURL: getHospitalBaseUrl(),
   headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
+    'Content-Type': 'multipart/form-data'
+  }
 });
 
-// ================= PROFILE =================
+export const hospitalService = {
+  createProfile: async (hospitalData) => {
+    const formData = new FormData();
+    Object.keys(hospitalData).forEach((key) => {
+      formData.append(key, hospitalData[key]);
+    });
+    
+    // License file is also handled here because multipart/form-data
+    const response = await api.post('/hospital/profile', formData, getMultipartConfig());
+    return response.data;
+  },
 
-export const getHospitalProfile = async () => {
-  const response = await axios.get(
-    `${API_BASE}/hospital/profile`,
-    getAuthHeader()
-  );
-  return response.data;
-};
+  getProfile: async () => {
+    const response = await api.get('/hospital/profile', getBaseConfig());
+    return response.data;
+  },
 
-export const createHospitalProfile = async (formData) => {
-  const response = await axios.post(
-    `${API_BASE}/hospital/profile`,
-    formData,
-    {
-      headers: {
-        ...getAuthHeader().headers,
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-  return response.data;
-};
+  getDashboardStats: async () => {
+    const response = await api.get('/hospital/dashboard', getBaseConfig());
+    return response.data;
+  },
 
-// ================= DASHBOARD =================
+  searchDonor: async (aadhaarNumber) => {
+    const response = await api.get(`/hospital/donors/search?aadhaarNumber=${aadhaarNumber}`, getBaseConfig());
+    return response.data;
+  },
 
-export const getHospitalDashboard = async () => {
-  const response = await axios.get(
-    `${API_BASE}/hospital/dashboard`,
-    getAuthHeader()
-  );
-  return response.data;
-};
+  uploadDeathCertificate: async (donorId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/hospital/donor/${donorId}/death-certificate`, formData, getMultipartConfig());
+    return response.data;
+  },
 
-// ================= DONOR SEARCH =================
+  registerOrgans: async (payload) => {
+    const response = await api.post('/hospital/organs/register', payload, getBaseConfig());
+    return response.data;
+  },
 
-export const searchDonorByAadhaar = async (aadhaar) => {
-  const response = await axios.get(
-    `${API_BASE}/hospital/donors/search?aadhaarNumber=${aadhaar}`,
-    getAuthHeader()
-  );
-  return response.data;
-};
+  registerRecipient: async (recipientData) => {
+    const response = await api.post('/hospital/recipients/register', recipientData, getBaseConfig());
+    return response.data;
+  },
 
-// ================= DEATH CERTIFICATE =================
+  getRecipients: async () => {
+    const response = await api.get('/hospital/recipients', getBaseConfig());
+    return response.data;
+  },
 
-export const uploadDeathCertificate = async (donorId, file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await axios.post(
-    `${API_BASE}/hospital/donor/${donorId}/death-certificate`,
-    formData,
-    {
-      headers: {
-        ...getAuthHeader().headers,
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
-  return response.data;
-};
-
-// ================= ORGAN REGISTER =================
-
-export const registerOrgan = async (payload) => {
-  const response = await axios.post(
-    `${API_BASE}/hospital/organs/register`,
-    payload,
-    getAuthHeader()
-  );
-  return response.data;
-};
-
-// ================= RECIPIENT =================
-
-export const registerRecipient = async (payload) => {
-  const response = await axios.post(
-    `${API_BASE}/hospital/recipients/register`,
-    payload,
-    getAuthHeader()
-  );
-  return response.data;
-};
-
-export const getMyRecipients = async () => {
-  const response = await axios.get(
-    `${API_BASE}/hospital/recipients`,
-    getAuthHeader()
-  );
-  return response.data;
-};
-
-// ================= ORGANS =================
-
-export const getMyOrgans = async () => {
-  const response = await axios.get(
-    `${API_BASE}/hospital/organs`,
-    getAuthHeader()
-  );
-  return response.data;
+  getOrgans: async () => {
+    const response = await api.get('/hospital/organs', getBaseConfig());
+    return response.data;
+  }
 };

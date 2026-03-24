@@ -16,29 +16,45 @@ public class TransplantCaseController {
 
     private final TransplantCaseService transplantCaseService;
 
-    @PreAuthorize("hasRole('HOSPITAL')")
-    @PostMapping("/{caseId}/retrieve")
-    public ResponseEntity<TransplantCase> retrieve(@PathVariable Long caseId) {
-        return ResponseEntity.ok(transplantCaseService.markRetrieved(caseId));
-    }
+    // ============================================================
+    // DISPATCH ORGAN (Organ hospital only)
+    // ============================================================
 
     @PreAuthorize("hasRole('HOSPITAL')")
     @PostMapping("/{caseId}/dispatch")
     public ResponseEntity<TransplantCase> dispatch(@PathVariable Long caseId) {
-        return ResponseEntity.ok(transplantCaseService.markInTransit(caseId));
+        return ResponseEntity.ok(
+                transplantCaseService.dispatch(caseId)
+        );
     }
+
+    // ============================================================
+    // RECEIVE ORGAN (Recipient hospital only)
+    // ============================================================
 
     @PreAuthorize("hasRole('HOSPITAL')")
     @PostMapping("/{caseId}/receive")
     public ResponseEntity<TransplantCase> receive(@PathVariable Long caseId) {
-        return ResponseEntity.ok(transplantCaseService.markReceived(caseId));
+        return ResponseEntity.ok(
+                transplantCaseService.receive(caseId)
+        );
     }
+
+    // ============================================================
+    // START SURGERY
+    // ============================================================
 
     @PreAuthorize("hasRole('HOSPITAL')")
     @PostMapping("/{caseId}/start-surgery")
     public ResponseEntity<TransplantCase> startSurgery(@PathVariable Long caseId) {
-        return ResponseEntity.ok(transplantCaseService.startSurgery(caseId));
+        return ResponseEntity.ok(
+                transplantCaseService.startSurgery(caseId)
+        );
     }
+
+    // ============================================================
+    // COMPLETE SURGERY
+    // ============================================================
 
     @PreAuthorize("hasRole('HOSPITAL')")
     @PostMapping("/{caseId}/complete-surgery")
@@ -55,22 +71,38 @@ public class TransplantCaseController {
         );
     }
 
+    // ============================================================
+    // REQUEST BODY
+    // ============================================================
+
     @Data
     public static class SurgeryRequest {
         private boolean success;
         private String notes;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','HOSPITAL')")
+    // ============================================================
+    // GET TIMELINE
+    // ============================================================
+
+//    @PreAuthorize("hasAnyRole('ADMIN','HOSPITAL')")
     @GetMapping("/{caseId}/timeline")
     public ResponseEntity<?> getTimeline(@PathVariable Long caseId) {
-        return ResponseEntity.ok(transplantCaseService.getTimeline(caseId));
+        return ResponseEntity.ok(
+                transplantCaseService.getTimeline(caseId)
+        );
     }
+
+    // ============================================================
+    // GET ALL CASES
+    // ============================================================
 
     @PreAuthorize("hasAnyRole('ADMIN','HOSPITAL')")
     @GetMapping("/cases")
     public ResponseEntity<?> getAllCases() {
-        return ResponseEntity.ok(transplantCaseService.getAllCases());
+        return ResponseEntity.ok(
+                transplantCaseService.getAllCases()
+        );
     }
 
 }

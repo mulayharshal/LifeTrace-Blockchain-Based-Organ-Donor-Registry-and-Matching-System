@@ -27,7 +27,13 @@ public class PublicVerificationController {
 
         response.put("caseId", transplantCase.getId());
         response.put("organType", transplantCase.getOrgan().getOrganType());
-        response.put("hospital", transplantCase.getHospital().getHospitalName());
+
+        response.put("organHospital",
+                transplantCase.getOrganHospital().getHospitalName());
+
+        response.put("recipientHospital",
+                transplantCase.getRecipientHospital().getHospitalName());
+
         response.put("status", transplantCase.getStatus());
         response.put("success", transplantCase.getSuccess());
 

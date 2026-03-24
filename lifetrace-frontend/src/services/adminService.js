@@ -1,75 +1,33 @@
-import axios from "axios";
+import api from '../api/axios';
 
-const API_BASE = "http://localhost:8080";
-
-const getAuthHeader = () => ({
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
+export const adminService = {
+  getHospitals: async () => {
+    const response = await api.get('/admin/hospitals');
+    return response.data;
   },
-});
-
-// Dashboard stats
-export const getAdminReports = async () => {
-  const res = await axios.get(
-    `${API_BASE}/api/reports/admin`,
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Audit stats
-export const getAdminAudit = async () => {
-  const res = await axios.get(
-    `${API_BASE}/api/admin/audit`,
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Get all hospitals
-export const getAllHospitals = async () => {
-  const res = await axios.get(
-    `${API_BASE}/api/admin/hospitals`,
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Get pending hospitals
-export const getPendingHospitals = async () => {
-  const res = await axios.get(
-    `${API_BASE}/api/admin/hospitals/pending`,
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Approve hospital
-export const approveHospital = async (id) => {
-  const res = await axios.post(
-    `${API_BASE}/api/admin/approve-hospital/${id}`,
-    {},
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Block hospital
-export const blockHospital = async (id) => {
-  const res = await axios.post(
-    `${API_BASE}/api/admin/block-hospital/${id}`,
-    {},
-    getAuthHeader()
-  );
-  return res.data;
-};
-
-// Unblock hospital
-export const unblockHospital = async (id) => {
-  const res = await axios.post(
-    `${API_BASE}/api/admin/unblock-hospital/${id}`,
-    {},
-    getAuthHeader()
-  );
-  return res.data;
+  getPendingHospitals: async () => {
+    const response = await api.get('/admin/hospitals/pending');
+    return response.data;
+  },
+  approveHospital: async (id) => {
+    const response = await api.post(`/admin/approve-hospital/${id}`);
+    return response.data;
+  },
+  blockHospital: async (id) => {
+    const response = await api.post(`/admin/block-hospital/${id}`);
+    return response.data;
+  },
+  unblockHospital: async (id) => {
+    const response = await api.post(`/admin/unblock-hospital/${id}`);
+    return response.data;
+  },
+  getAuditLogs: async () => {
+    const response = await api.get('/admin/audit');
+    return response.data;
+  },
+  getReports: async () => {
+    // According to docs, /api/reports/admin returns stats
+    const response = await api.get('/reports/admin');
+    return response.data;
+  }
 };

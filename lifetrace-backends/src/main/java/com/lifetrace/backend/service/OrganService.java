@@ -176,11 +176,20 @@ public class OrganService {
         transplantCaseService.createCase(organ, recipient);
 
         try {
-            blockchainService.storeOrganAllocation(
-                    organ.getId(),
-                    organ.getDonorId(),
-                    recipient.getHospital().getId()
-            );
+            // 🔥 CALL BLOCKCHAIN + GET RECEIPT
+            org.web3j.protocol.core.methods.response.TransactionReceipt receipt =
+                    blockchainService.storeOrganAllocation(
+                            organ.getId(),
+                            organ.getDonorId(),
+                            recipient.getHospital().getId()
+                    );
+
+            // 🔥 SAVE TX HASH IN DB
+            if (receipt != null && receipt.getTransactionHash() != null) {
+                organ.setBlockchainTxHash(receipt.getTransactionHash());
+                organRepository.save(organ);
+            }
+
         } catch (Exception e) {
             throw new RuntimeException("Blockchain transaction failed", e);
         }

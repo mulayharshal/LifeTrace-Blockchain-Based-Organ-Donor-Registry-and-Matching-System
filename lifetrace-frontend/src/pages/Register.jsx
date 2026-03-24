@@ -1,106 +1,122 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { registerUser } from "../services/authService";
-import "./Auth.css";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Activity, ShieldCheck, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { authService } from '../services/authService';
 
-function Register() {
-  const navigate = useNavigate();
-
+export default function Register() {
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    role: "DONOR"
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'DONOR'
   });
-
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
     setLoading(true);
-
     try {
-      await registerUser(formData);
-      setMessage("Registration successful! You can now login.");
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
-
-    } catch {
-      setError("Registration failed.");
+      await authService.register(formData);
+      toast.success('Registration successful. Please login.');
+      navigate('/login');
+    } catch (err) {
+      toast.error('Registration failed. Try a different email.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute top-10 left-10 w-96 h-96 bg-brand-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-200 rounded-full blur-3xl opacity-30 animate-pulse delay-500"></div>
 
-      <div className="auth-card">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="sm:mx-auto sm:w-full sm:max-w-md z-10 glass-card p-10 rounded-3xl"
+      >
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+             <div className="w-16 h-16 bg-gradient-to-tr from-brand-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 transform rotate-6">
+                <ShieldCheck className="text-white w-8 h-8" />
+             </div>
+          </div>
+          <h2 className="text-3xl font-extrabold bg-gradient-to-r from-slate-900 to-brand-800 bg-clip-text text-transparent">Create an account</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Join the decentralized organ donation network
+          </p>
+        </div>
 
-        <h2>Create Account</h2>
-        <p className="auth-subtitle">Join LifeTrace System</p>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+            <input
+              required
+              className="appearance-none relative block w-full px-4 py-3 border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+              placeholder="John Doe"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            />
+          </div>
 
-        <form onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email address</label>
+            <input
+              type="email"
+              required
+              className="appearance-none relative block w-full px-4 py-3 border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+              placeholder="john@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
 
-          <input
-            name="fullName"
-            placeholder="Full Name"
-            onChange={handleChange}
-            required
-          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <input
+              type="password"
+              required
+              className="appearance-none relative block w-full px-4 py-3 border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            onChange={handleChange}
-            required
-          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Registration Role</label>
+            <select
+              className="appearance-none block w-full px-4 py-3 border border-slate-200 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all bg-white"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            >
+              <option value="DONOR">Donor</option>
+              <option value="HOSPITAL">Hospital Representative</option>
+              <option value="ADMIN">System Admin</option>
+            </select>
+          </div>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            onChange={handleChange}
-            required
-          />
-
-          <select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
+          <button
+            type="submit"
+            disabled={loading}
+            className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 shadow-lg shadow-brand-500/30 transition-all"
           >
-            <option value="DONOR">Donor</option>
-            <option value="HOSPITAL">Hospital</option>
-          </select>
-
-          <button className="auth-btn" disabled={loading}>
-            {loading ? "Creating..." : "Register"}
+            {loading ? "Registering..." : "Create Account"}
           </button>
-
         </form>
 
-        {message && <p className="success-text">{message}</p>}
-        {error && <p className="error-text">{error}</p>}
-
-        <p className="auth-link">
-          Already have account? <Link to="/">Login here</Link>
-        </p>
-
-      </div>
-
+        <div className="mt-6 text-center text-sm text-slate-500">
+          Already have an account?{' '}
+          <Link to="/login" className="font-medium text-brand-600 hover:text-brand-500 transition-colors">
+            Sign In
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 }
-
-export default Register;

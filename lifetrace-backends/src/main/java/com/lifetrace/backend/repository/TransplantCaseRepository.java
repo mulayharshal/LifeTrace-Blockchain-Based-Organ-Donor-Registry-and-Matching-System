@@ -8,9 +8,13 @@ import java.util.List;
 
 public interface TransplantCaseRepository extends JpaRepository<TransplantCase, Long> {
 
-    List<TransplantCase> findByHospitalId(Long hospitalId);
+
+    long countByStatus(TransplantStatus status);
+
+    List<TransplantCase> findByOrganHospitalId(Long hospitalId);
+
+    List<TransplantCase> findByRecipientHospitalId(Long hospitalId);
 
     List<TransplantCase> findByStatus(TransplantStatus status);
-    long countByStatus(TransplantStatus status);
 
 }

@@ -31,9 +31,15 @@ public class TransplantCase {
     @JoinColumn(name = "recipient_id", nullable = false)
     private Recipient recipient;
 
+    // Hospital that registered the organ
     @ManyToOne
-    @JoinColumn(name = "hospital_id", nullable = false)
-    private Hospital hospital;
+    @JoinColumn(name = "organ_hospital_id", nullable = false)
+    private Hospital organHospital;
+
+    // Hospital where recipient is admitted
+    @ManyToOne
+    @JoinColumn(name = "recipient_hospital_id", nullable = false)
+    private Hospital recipientHospital;
 
     private Long donorId;
 
@@ -49,8 +55,6 @@ public class TransplantCase {
     // ============================================================
 
     private LocalDateTime allocationTime;
-
-    private LocalDateTime retrievalTime;
 
     private LocalDateTime dispatchTime;
 
@@ -76,4 +80,7 @@ public class TransplantCase {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @Column(name = "blockchain_tx_hash")
+    private String blockchainTxHash;
 }

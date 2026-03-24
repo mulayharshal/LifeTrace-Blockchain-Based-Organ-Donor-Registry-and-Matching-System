@@ -1,44 +1,24 @@
-import axios from "axios";
+import api from '../api/axios';
 
-const API_BASE = "http://localhost:8080";
-
-const getAuthHeader = () => ({
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
+export const donorService = {
+  createProfile: async (profileData) => {
+    const response = await api.post('/donor/profile', profileData);
+    return response.data;
   },
-});
-
-export const getDonorProfile = async () => {
-  const response = await axios.get(
-    `${API_BASE}/api/donor/profile`,
-    getAuthHeader()
-  );
-  return response.data;
-};
-
-export const createDonorProfile = async (data) => {
-  const response = await axios.post(
-    `${API_BASE}/api/donor/profile`,
-    data,
-    getAuthHeader()
-  );
-  return response.data;
-};
-
-export const uploadConsentFile = async (donorId, file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await axios.post(
-    `${API_BASE}/api/donor/upload-consent/${donorId}`,
-    formData,
-    {
+  
+  uploadConsent: async (donorId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/donor/upload-consent/${donorId}`, formData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
 
-  return response.data;
+  getProfile: async () => {
+    const response = await api.get('/donor/profile');
+    return response.data;
+  }
 };

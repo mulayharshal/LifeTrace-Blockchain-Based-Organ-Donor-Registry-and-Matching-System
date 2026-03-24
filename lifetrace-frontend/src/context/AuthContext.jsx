@@ -1,33 +1,47 @@
-import { createContext, useContext, useState } from "react";
+import React, { createContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [role, setRole] = useState(localStorage.getItem("role"));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const login = (jwtToken) => {
-    const payload = JSON.parse(atob(jwtToken.split(".")[1]));
-    const userRole = payload.role;
+  useEffect(() => {
+    // Check if token exists in localStorage
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
 
-    localStorage.setItem("token", jwtToken);
-    localStorage.setItem("role", userRole);
+    if (token && storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
 
-    setToken(jwtToken);
-    setRole(userRole);
+  const login = (userData, token) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    
+    const normalizedRole = userData.role.toUpperCase();
+    // Redirect based on role
+    if (normalizedRole === 'DONOR') navigate('/donor/dashboard');
+    else if (normalizedRole === 'HOSPITAL') navigate('/hospital/dashboard');
+    else if (normalizedRole === 'ADMIN') navigate('/admin/dashboard');
+    else navigate('/');
   };
 
   const logout = () => {
-    localStorage.clear();
-    setToken(null);
-    setRole(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
   };
 
   return (
-    <AuthContext.Provider value={{ token, role, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+        {!loading && children}
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);
