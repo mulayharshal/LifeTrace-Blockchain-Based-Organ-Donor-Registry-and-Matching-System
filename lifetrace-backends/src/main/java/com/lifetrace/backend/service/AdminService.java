@@ -8,9 +8,7 @@ import com.lifetrace.backend.repository.DonorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -19,67 +17,74 @@ public class AdminService {
     private final HospitalRepository hospitalRepository;
     private final DonorRepository donorRepository;
     private final OrganRepository organRepository;
+    private final EmailService emailService; // 🔥 added
 
-    // ==============================================
-    // 1️⃣ Get All Hospitals
-    // ==============================================
     public List<Hospital> getAllHospitals() {
         return hospitalRepository.findAll();
     }
 
-    // ==============================================
-    // 2️⃣ Get Pending Hospitals
-    // ==============================================
     public List<Hospital> getPendingHospitals() {
         return hospitalRepository.findByApprovedFalse();
     }
 
-    // ==============================================
-    // 3️⃣ Approve Hospital
-    // ==============================================
     public Hospital approveHospital(Long hospitalId) {
 
         Hospital hospital = hospitalRepository.findById(hospitalId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Hospital not found with ID: " + hospitalId));
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found"));
 
         hospital.setApproved(true);
         hospital.setBlocked(false);
 
-        return hospitalRepository.save(hospital);
+        Hospital saved = hospitalRepository.save(hospital);
+
+        try {
+            emailService.sendHospitalStatusEmail(
+                    hospital.getUser().getEmail(),
+                    "APPROVED"
+            );
+        } catch (Exception e) {}
+
+        return saved;
     }
 
-    // ==============================================
-    // 4️⃣ Block Hospital
-    // ==============================================
     public Hospital blockHospital(Long hospitalId) {
 
         Hospital hospital = hospitalRepository.findById(hospitalId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Hospital not found with ID: " + hospitalId));
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found"));
 
         hospital.setBlocked(true);
 
-        return hospitalRepository.save(hospital);
+        Hospital saved = hospitalRepository.save(hospital);
+
+        try {
+            emailService.sendHospitalStatusEmail(
+                    hospital.getUser().getEmail(),
+                    "BLOCKED"
+            );
+        } catch (Exception e) {}
+
+        return saved;
     }
 
-    // ==============================================
-    // 5️⃣ Unblock Hospital
-    // ==============================================
     public Hospital unblockHospital(Long hospitalId) {
 
         Hospital hospital = hospitalRepository.findById(hospitalId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Hospital not found with ID: " + hospitalId));
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found"));
 
         hospital.setBlocked(false);
 
-        return hospitalRepository.save(hospital);
+        Hospital saved = hospitalRepository.save(hospital);
+
+        try {
+            emailService.sendHospitalStatusEmail(
+                    hospital.getUser().getEmail(),
+                    "UNBLOCKED"
+            );
+        } catch (Exception e) {}
+
+        return saved;
     }
 
-    // ==============================================
-    // 6️⃣ Audit Data
-    // ==============================================
     public Map<String, Object> getAuditData() {
 
         Map<String, Object> data = new HashMap<>();

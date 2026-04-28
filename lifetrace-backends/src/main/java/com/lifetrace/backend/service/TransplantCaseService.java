@@ -1,6 +1,5 @@
 package com.lifetrace.backend.service;
 
-import com.lifetrace.backend.dto.TransplantTimelineResponse;
 import com.lifetrace.backend.exception.ResourceNotFoundException;
 import com.lifetrace.backend.exception.UnauthorizedException;
 import com.lifetrace.backend.model.*;
@@ -22,12 +21,11 @@ public class TransplantCaseService {
     private final RecipientRepository recipientRepository;
     private final HospitalRepository hospitalRepository;
     private final UserRepository userRepository;
-
-    // 🔥 ADD THIS LINE (ONLY NEW DEPENDENCY)
     private final BlockchainService blockchainService;
+    private final EmailService emailService;
 
     // ============================================================
-    // CREATE TRANSPLANT CASE
+    // CREATE CASE
     // ============================================================
 
     public TransplantCase createCase(Organ organ, Recipient recipient) {
@@ -48,49 +46,54 @@ public class TransplantCaseService {
     }
 
     // ============================================================
-    // DISPATCH ORGAN (ONLY ORGAN HOSPITAL)
+    // DISPATCH
     // ============================================================
 
     public TransplantCase dispatch(Long caseId) {
 
         TransplantCase transplantCase = getCase(caseId);
-
         Hospital loggedHospital = getLoggedHospital();
 
         if (!loggedHospital.getId().equals(
                 transplantCase.getOrganHospital().getId())) {
-
-            throw new UnauthorizedException(
-                    "Only organ hospital can dispatch organ");
+            throw new UnauthorizedException("Only organ hospital can dispatch");
         }
 
         if (transplantCase.getStatus() != TransplantStatus.MATCHED) {
-            throw new RuntimeException(
-                    "Case must be MATCHED to dispatch");
+            throw new RuntimeException("Case must be MATCHED");
         }
 
         transplantCase.setStatus(TransplantStatus.IN_TRANSIT);
         transplantCase.setDispatchTime(LocalDateTime.now());
         transplantCase.setUpdatedAt(LocalDateTime.now());
 
-        return transplantCaseRepository.save(transplantCase);
+        TransplantCase saved = transplantCaseRepository.save(transplantCase);
+
+        String organEmail = transplantCase.getOrganHospital().getUser().getEmail();
+        String recipientEmail = transplantCase.getRecipientHospital().getUser().getEmail();
+
+        try {
+            emailService.sendDispatchEmail(organEmail, transplantCase.getId());
+            emailService.sendDispatchEmail(recipientEmail, transplantCase.getId());
+        } catch (Exception e) {
+            System.out.println("Dispatch email failed");
+        }
+
+        return saved;
     }
 
     // ============================================================
-    // RECEIVE ORGAN (ONLY RECIPIENT HOSPITAL)
+    // RECEIVE
     // ============================================================
 
     public TransplantCase receive(Long caseId) {
 
         TransplantCase transplantCase = getCase(caseId);
-
         Hospital loggedHospital = getLoggedHospital();
 
         if (!loggedHospital.getId().equals(
                 transplantCase.getRecipientHospital().getId())) {
-
-            throw new UnauthorizedException(
-                    "Only recipient hospital can receive organ");
+            throw new UnauthorizedException("Only recipient hospital");
         }
 
         if (transplantCase.getStatus() != TransplantStatus.IN_TRANSIT) {
@@ -104,7 +107,19 @@ public class TransplantCaseService {
         transplantCase.getOrgan().setStatus(OrganStatus.RECEIVED);
         organRepository.save(transplantCase.getOrgan());
 
-        return transplantCaseRepository.save(transplantCase);
+        TransplantCase saved = transplantCaseRepository.save(transplantCase);
+
+        String organEmail = transplantCase.getOrganHospital().getUser().getEmail();
+        String recipientEmail = transplantCase.getRecipientHospital().getUser().getEmail();
+
+        try {
+            emailService.sendReceiveEmail(organEmail, transplantCase.getId());
+            emailService.sendReceiveEmail(recipientEmail, transplantCase.getId());
+        } catch (Exception e) {
+            System.out.println("Receive email failed");
+        }
+
+        return saved;
     }
 
     // ============================================================
@@ -114,22 +129,18 @@ public class TransplantCaseService {
     public TransplantCase startSurgery(Long caseId) {
 
         TransplantCase transplantCase = getCase(caseId);
-
         Hospital loggedHospital = getLoggedHospital();
 
         if (!loggedHospital.getId().equals(
                 transplantCase.getRecipientHospital().getId())) {
-
-            throw new UnauthorizedException(
-                    "Only recipient hospital can start surgery");
+            throw new UnauthorizedException("Only recipient hospital");
         }
 
         if (transplantCase.getStatus() != TransplantStatus.RECEIVED) {
             throw new RuntimeException("Case must be RECEIVED");
         }
 
-        transplantCase.setStatus(
-                TransplantStatus.SURGERY_IN_PROGRESS);
+        transplantCase.setStatus(TransplantStatus.SURGERY_IN_PROGRESS);
         transplantCase.setSurgeryStartTime(LocalDateTime.now());
         transplantCase.setUpdatedAt(LocalDateTime.now());
 
@@ -137,31 +148,21 @@ public class TransplantCaseService {
     }
 
     // ============================================================
-    // COMPLETE SURGERY (UPDATED ONLY HERE)
+    // COMPLETE SURGERY
     // ============================================================
 
-    public TransplantCase completeSurgery(
-            Long caseId,
-            boolean success,
-            String notes
-    ) {
+    public TransplantCase completeSurgery(Long caseId, boolean success, String notes) {
 
         TransplantCase transplantCase = getCase(caseId);
-
         Hospital loggedHospital = getLoggedHospital();
 
         if (!loggedHospital.getId().equals(
                 transplantCase.getRecipientHospital().getId())) {
-
-            throw new UnauthorizedException(
-                    "Only recipient hospital can complete surgery");
+            throw new UnauthorizedException("Only recipient hospital");
         }
 
-        if (transplantCase.getStatus()
-                != TransplantStatus.SURGERY_IN_PROGRESS) {
-
-            throw new RuntimeException(
-                    "Surgery must be in progress");
+        if (transplantCase.getStatus() != TransplantStatus.SURGERY_IN_PROGRESS) {
+            throw new RuntimeException("Surgery must be in progress");
         }
 
         transplantCase.setSurgeryEndTime(LocalDateTime.now());
@@ -173,13 +174,10 @@ public class TransplantCaseService {
         Recipient recipient = transplantCase.getRecipient();
 
         if (success) {
-
             transplantCase.setStatus(TransplantStatus.COMPLETED);
             recipient.setStatus(RecipientStatus.COMPLETED);
             organ.setStatus(OrganStatus.RECEIVED);
-
         } else {
-
             transplantCase.setStatus(TransplantStatus.FAILED);
             recipient.setStatus(RecipientStatus.FAILED);
             organ.setStatus(OrganStatus.CANCELLED);
@@ -188,27 +186,37 @@ public class TransplantCaseService {
         recipientRepository.save(recipient);
         organRepository.save(organ);
 
-        // 🔥 NEW BLOCKCHAIN CODE (ONLY ADDITION)
         try {
-            org.web3j.protocol.core.methods.response.TransactionReceipt receipt =
-                    blockchainService.storeSurgeryResult(
-                            transplantCase.getId(),
-                            success
-                    );
+            var receipt = blockchainService.storeSurgeryResult(
+                    transplantCase.getId(),
+                    success
+            );
 
             if (receipt != null && receipt.getTransactionHash() != null) {
                 transplantCase.setBlockchainTxHash(receipt.getTransactionHash());
             }
 
         } catch (Exception e) {
-            System.out.println("❌ Blockchain surgery failed: " + e.getMessage());
+            System.out.println("Blockchain failed");
         }
 
-        return transplantCaseRepository.save(transplantCase);
+        TransplantCase saved = transplantCaseRepository.save(transplantCase);
+
+        String organEmail = transplantCase.getOrganHospital().getUser().getEmail();
+        String recipientEmail = transplantCase.getRecipientHospital().getUser().getEmail();
+
+        try {
+            emailService.sendSurgeryResultEmail(organEmail, transplantCase.getId(), success);
+            emailService.sendSurgeryResultEmail(recipientEmail, transplantCase.getId(), success);
+        } catch (Exception e) {
+            System.out.println("Surgery email failed");
+        }
+
+        return saved;
     }
 
     // ============================================================
-    // GET TIMELINE
+    // GET
     // ============================================================
 
     public TransplantCase getTimeline(Long caseId) {
@@ -219,10 +227,13 @@ public class TransplantCaseService {
         return transplantCaseRepository.findAll();
     }
 
+    // ============================================================
+    // HELPERS
+    // ============================================================
+
     private TransplantCase getCase(Long caseId) {
         return transplantCaseRepository.findById(caseId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Transplant case not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
     }
 
     private Hospital getLoggedHospital() {
@@ -233,11 +244,9 @@ public class TransplantCaseService {
                 .getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return hospitalRepository.findByUser(user)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Hospital not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found"));
     }
 }

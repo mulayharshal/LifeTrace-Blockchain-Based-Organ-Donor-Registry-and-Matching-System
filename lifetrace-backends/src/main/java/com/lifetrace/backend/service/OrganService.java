@@ -91,6 +91,15 @@ public class OrganService {
     // ============================================================
     public void tryMatchByOrgan(Organ organ) {
 
+        // VALID ORGAN CHECK
+        if (
+                organ.getStatus() != OrganStatus.AVAILABLE ||
+                        (organ.getCondition() != null &&
+                                organ.getCondition().equalsIgnoreCase("DAMAGED"))
+        ) {
+            return;
+        }
+
         List<Recipient> recipients = recipientRepository
                 .findByOrganTypeAndBloodGroupAndStatus(
                         organ.getOrganType(),
@@ -100,7 +109,26 @@ public class OrganService {
 
         if (recipients.isEmpty()) return;
 
-        // 1️⃣ Same location + HIGH urgency
+        Donor donor = donorRepository.findById(organ.getDonorId())
+                .orElseThrow(() -> new RuntimeException("Donor not found"));
+
+        int donorAge = donor.getAge();
+
+        // 1️⃣ Same location + HIGH urgency + AGE MATCH
+        for (Recipient r : recipients) {
+            int ageDiff = Math.abs(donorAge - r.getAge());
+
+            if (r.getLocation() != null &&
+                    r.getLocation().equalsIgnoreCase(organ.getLocation()) &&
+                    "HIGH".equalsIgnoreCase(r.getUrgencyLevel()) &&
+                    ageDiff <= 15) {
+
+                allocateOrgan(organ, r);
+                return;
+            }
+        }
+
+        // 2️⃣ Same location + HIGH urgency
         for (Recipient r : recipients) {
             if (r.getLocation() != null &&
                     r.getLocation().equalsIgnoreCase(organ.getLocation()) &&
@@ -111,7 +139,7 @@ public class OrganService {
             }
         }
 
-        // 2️⃣ Same location
+        // 3️⃣ Same location
         for (Recipient r : recipients) {
             if (r.getLocation() != null &&
                     r.getLocation().equalsIgnoreCase(organ.getLocation())) {
@@ -121,7 +149,7 @@ public class OrganService {
             }
         }
 
-        // 3️⃣ HIGH urgency anywhere
+        // 4️⃣ HIGH urgency anywhere
         for (Recipient r : recipients) {
             if ("HIGH".equalsIgnoreCase(r.getUrgencyLevel())) {
                 allocateOrgan(organ, r);
@@ -129,7 +157,7 @@ public class OrganService {
             }
         }
 
-        // 4️⃣ Fallback
+        // fallback
         allocateOrgan(organ, recipients.get(0));
     }
 
@@ -147,7 +175,38 @@ public class OrganService {
 
         if (organs.isEmpty()) return;
 
+        // 1️⃣ Same location + AGE MATCH
         for (Organ organ : organs) {
+
+            if (
+                    organ.getStatus() != OrganStatus.AVAILABLE ||
+                            (organ.getCondition() != null &&
+                                    organ.getCondition().equalsIgnoreCase("DAMAGED"))
+            ) continue;
+
+            Donor donor = donorRepository.findById(organ.getDonorId())
+                    .orElseThrow(() -> new RuntimeException("Donor not found"));
+
+            int ageDiff = Math.abs(donor.getAge() - recipient.getAge());
+
+            if (organ.getLocation() != null &&
+                    organ.getLocation().equalsIgnoreCase(recipient.getLocation()) &&
+                    ageDiff <= 15) {
+
+                allocateOrgan(organ, recipient);
+                return;
+            }
+        }
+
+        // 2️⃣ Same location
+        for (Organ organ : organs) {
+
+            if (
+                    organ.getStatus() != OrganStatus.AVAILABLE ||
+                            (organ.getCondition() != null &&
+                                    organ.getCondition().equalsIgnoreCase("DAMAGED"))
+            ) continue;
+
             if (organ.getLocation() != null &&
                     organ.getLocation().equalsIgnoreCase(recipient.getLocation())) {
 
@@ -156,11 +215,22 @@ public class OrganService {
             }
         }
 
-        allocateOrgan(organs.get(0), recipient);
+        // 3️⃣ fallback
+        for (Organ organ : organs) {
+
+            if (
+                    organ.getStatus() != OrganStatus.AVAILABLE ||
+                            (organ.getCondition() != null &&
+                                    organ.getCondition().equalsIgnoreCase("DAMAGED"))
+            ) continue;
+
+            allocateOrgan(organ, recipient);
+            return;
+        }
     }
 
     // ============================================================
-    // SAFE ALLOCATION + CREATE TRANSPLANT CASE
+    // SAFE ALLOCATION
     // ============================================================
     public void allocateOrgan(Organ organ, Recipient recipient) {
 
@@ -172,11 +242,9 @@ public class OrganService {
         organRepository.save(organ);
         recipientRepository.save(recipient);
 
-        // 🔥 CREATE TRANSPLANT CASE
         transplantCaseService.createCase(organ, recipient);
 
         try {
-            // 🔥 CALL BLOCKCHAIN + GET RECEIPT
             org.web3j.protocol.core.methods.response.TransactionReceipt receipt =
                     blockchainService.storeOrganAllocation(
                             organ.getId(),
@@ -184,7 +252,6 @@ public class OrganService {
                             recipient.getHospital().getId()
                     );
 
-            // 🔥 SAVE TX HASH IN DB
             if (receipt != null && receipt.getTransactionHash() != null) {
                 organ.setBlockchainTxHash(receipt.getTransactionHash());
                 organRepository.save(organ);

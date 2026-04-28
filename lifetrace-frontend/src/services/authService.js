@@ -1,11 +1,17 @@
 import api from '../api/axios';
 
 export const authService = {
-  register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
+  registerOtp: async (userData) => {
+    const response = await api.post('/auth/register-otp', userData);
     return response.data;
   },
   
+  registerVerify: async (otp, userData) => {
+    // We send payload as well as OTP in query
+    const response = await api.post(`/auth/register-verify?otp=${encodeURIComponent(otp)}`, userData);
+    return response.data;
+  },
+
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
     // JWT TOKEN STRING comes directly, assuming backend returns { token: "..." } or raw string.
@@ -44,5 +50,15 @@ export const authService = {
     }
     
     return { token, user: userPayload };
+  },
+
+  forgotPassword: async (email) => {
+    const response = await api.post(`/auth/forgot-password?email=${encodeURIComponent(email)}`, {});
+    return response.data;
+  },
+
+  resetPassword: async (email, otp, newPassword) => {
+    const response = await api.post(`/auth/reset-password?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}&newPassword=${encodeURIComponent(newPassword)}`, {});
+    return response.data;
   }
 };
