@@ -2,6 +2,7 @@ package com.lifetrace.backend.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -10,9 +11,11 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY =
-            "lifetrace_secret_key_lifetrace_secret_key_123456";
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 10;
+    @Value("${SECRET_KEY}")
+    private String SECRET_KEY;
+
+    @Value("${EXPIRATION_TIME}")
+    private long EXPIRATION_TIME ;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
