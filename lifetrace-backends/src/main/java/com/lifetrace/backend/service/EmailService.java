@@ -3,41 +3,54 @@ package com.lifetrace.backend.service;
 import com.lifetrace.backend.model.Organ;
 import com.lifetrace.backend.model.Recipient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.resend.Resend;
+import com.resend.services.emails.model.*;
+import com.resend.services.emails.model.CreateEmailOptions;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    // 🔥 RESEND CLIENT
+    private final Resend resend = new Resend(System.getenv("RESEND_API_KEY"));
 
-    @Value("${spring.mail.username}")
-    private String fromEmail;
+    // ===============================
+    // COMMON SEND METHOD
+    // ===============================
+    private void sendEmail(String to, String subject, String html) {
+        try {
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("onboarding@resend.dev") // default sender
+                    .to(to)
+                    .subject(subject)
+                    .html(html)
+                    .build();
+
+            resend.emails().send(params);
+
+            System.out.println("Email sent successfully to: " + to);
+
+        } catch (Exception e) {
+            System.out.println("Email failed for: " + to);
+            e.printStackTrace();
+        }
+    }
 
     // ===============================
     // MATCH EMAIL
     // ===============================
     @Async
     public void sendHospitalMatchEmail(String email, Organ organ, Recipient recipient) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("LifeTrace - Organ Match Found");
-            mail.setText(
-                    "Organ Match Found!\n\n" +
-                            "Organ: " + organ.getOrganType() + "\n" +
-                            "Blood Group: " + organ.getBloodGroup() + "\n" +
-                            "Recipient ID: " + recipient.getId()
-            );
-            mailSender.send(mail);
-        } catch (Exception e) {
-            System.out.println("Match email failed");
-        }
+        sendEmail(
+                email,
+                "LifeTrace - Organ Match Found",
+                "<h3>Organ Match Found</h3>" +
+                        "<p>Organ: " + organ.getOrganType() + "</p>" +
+                        "<p>Blood Group: " + organ.getBloodGroup() + "</p>" +
+                        "<p>Recipient ID: " + recipient.getId() + "</p>"
+        );
     }
 
     // ===============================
@@ -45,16 +58,11 @@ public class EmailService {
     // ===============================
     @Async
     public void sendDispatchEmail(String email, Long caseId) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("LifeTrace - Organ Dispatched");
-            mail.setText("Case ID: " + caseId + "\nOrgan dispatched.");
-            mailSender.send(mail);
-        } catch (Exception e) {
-            System.out.println("Dispatch email failed");
-        }
+        sendEmail(
+                email,
+                "LifeTrace - Organ Dispatched",
+                "<p>Case ID: " + caseId + "</p><p>Organ dispatched.</p>"
+        );
     }
 
     // ===============================
@@ -62,16 +70,11 @@ public class EmailService {
     // ===============================
     @Async
     public void sendReceiveEmail(String email, Long caseId) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("LifeTrace - Organ Received");
-            mail.setText("Case ID: " + caseId + "\nOrgan received.");
-            mailSender.send(mail);
-        } catch (Exception e) {
-            System.out.println("Receive email failed");
-        }
+        sendEmail(
+                email,
+                "LifeTrace - Organ Received",
+                "<p>Case ID: " + caseId + "</p><p>Organ received.</p>"
+        );
     }
 
     // ===============================
@@ -79,19 +82,14 @@ public class EmailService {
     // ===============================
     @Async
     public void sendSurgeryResultEmail(String email, Long caseId, boolean success) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("LifeTrace - Surgery Result");
 
-            String result = success ? "SUCCESSFUL" : "FAILED";
+        String result = success ? "SUCCESSFUL" : "FAILED";
 
-            mail.setText("Case ID: " + caseId + "\nResult: " + result);
-            mailSender.send(mail);
-        } catch (Exception e) {
-            System.out.println("Surgery email failed");
-        }
+        sendEmail(
+                email,
+                "LifeTrace - Surgery Result",
+                "<p>Case ID: " + caseId + "</p><p>Result: " + result + "</p>"
+        );
     }
 
     // ===============================
@@ -99,17 +97,11 @@ public class EmailService {
     // ===============================
     @Async
     public void sendOtpEmail(String email, String otp) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("LifeTrace - OTP");
-            mail.setText("Your OTP: " + otp);
-            mailSender.send(mail);
-        } catch (Exception e) {
-            System.out.println("OTP email failed");
-            e.printStackTrace(); // THIS IS CRITICAL
-        }
+        sendEmail(
+                email,
+                "LifeTrace - OTP",
+                "<h2>Your OTP: " + otp + "</h2>"
+        );
     }
 
     // ===============================
@@ -117,26 +109,20 @@ public class EmailService {
     // ===============================
     @Async
     public void sendRegistrationSuccessEmail(String email) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("Registration Successful");
-            mail.setText("Your account is created successfully.");
-            mailSender.send(mail);
-        } catch (Exception e) {}
+        sendEmail(
+                email,
+                "Registration Successful",
+                "<p>Your account is created successfully.</p>"
+        );
     }
 
     @Async
     public void sendLoginAlertEmail(String email) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("Login Alert");
-            mail.setText("You logged in successfully.");
-            mailSender.send(mail);
-        } catch (Exception e) {}
+        sendEmail(
+                email,
+                "Login Alert",
+                "<p>You logged in successfully.</p>"
+        );
     }
 
     // ===============================
@@ -144,13 +130,10 @@ public class EmailService {
     // ===============================
     @Async
     public void sendHospitalStatusEmail(String email, String status) {
-        try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setFrom(fromEmail);
-            mail.setTo(email);
-            mail.setSubject("Hospital Status Update");
-            mail.setText("Your hospital is now: " + status);
-            mailSender.send(mail);
-        } catch (Exception e) {}
+        sendEmail(
+                email,
+                "Hospital Status Update",
+                "<p>Your hospital is now: <b>" + status + "</b></p>"
+        );
     }
 }
