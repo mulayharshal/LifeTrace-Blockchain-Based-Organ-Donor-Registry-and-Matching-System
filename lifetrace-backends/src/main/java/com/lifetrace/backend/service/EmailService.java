@@ -108,6 +108,7 @@ public class EmailService {
             mailSender.send(mail);
         } catch (Exception e) {
             System.out.println("OTP email failed");
+            e.printStackTrace(); // THIS IS CRITICAL
         }
     }
 
