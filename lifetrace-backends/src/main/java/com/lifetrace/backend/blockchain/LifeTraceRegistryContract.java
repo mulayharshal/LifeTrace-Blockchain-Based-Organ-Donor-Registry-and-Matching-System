@@ -10,23 +10,24 @@ import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Uint256;
-import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
+import org.web3j.tx.TransactionManager; // ✅ ADDED
 import org.web3j.tx.gas.ContractGasProvider;
 
 public class LifeTraceRegistryContract extends Contract {
 
     public static final String BINARY = "0x";
 
+    // ✅ UPDATED CONSTRUCTOR (ONLY CHANGE)
     protected LifeTraceRegistryContract(
             String contractAddress,
             Web3j web3j,
-            Credentials credentials,
+            TransactionManager transactionManager,
             ContractGasProvider gasProvider
     ) {
-        super(BINARY, contractAddress, web3j, credentials, gasProvider);
+        super(BINARY, contractAddress, web3j, transactionManager, gasProvider);
     }
 
     @Override
@@ -34,16 +35,17 @@ public class LifeTraceRegistryContract extends Contract {
         return contractAddress;
     }
 
+    // ✅ UPDATED LOAD METHOD (ONLY CHANGE)
     public static LifeTraceRegistryContract load(
             String contractAddress,
             Web3j web3j,
-            Credentials credentials,
+            TransactionManager txManager,
             ContractGasProvider gasProvider
     ) {
         return new LifeTraceRegistryContract(
                 contractAddress,
                 web3j,
-                credentials,
+                txManager,
                 gasProvider
         );
     }

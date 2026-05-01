@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.RawTransactionManager;
+import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 
 import java.math.BigInteger;
@@ -22,6 +24,10 @@ public class Web3Config {
 
     @Value("${blockchain.private.key}")
     private String privateKey;
+
+    // ✅ ADD THIS
+    @Value("${blockchain.chain.id}")
+    private long chainId;
 
     // ===============================
     // Web3 instance
@@ -40,7 +46,7 @@ public class Web3Config {
     }
 
     // ===============================
-    // 🔥 FIXED GAS PROVIDER (CRITICAL)
+    // GAS PROVIDER
     // ===============================
     @Bean
     public ContractGasProvider contractGasProvider() {
@@ -48,8 +54,7 @@ public class Web3Config {
 
             @Override
             public BigInteger getGasPrice(String contractFunc) {
-                // Ganache default gas price
-                return BigInteger.valueOf(20_000_000_000L); // 20 Gwei
+                return BigInteger.valueOf(20_000_000_000L);
             }
 
             @Override
@@ -59,7 +64,6 @@ public class Web3Config {
 
             @Override
             public BigInteger getGasLimit(String contractFunc) {
-                // SAFE gas limit for Ganache
                 return BigInteger.valueOf(3_000_000);
             }
 
@@ -71,7 +75,7 @@ public class Web3Config {
     }
 
     // ===============================
-    // Contract Bean
+    // CONTRACT BEAN (🔥 FIXED)
     // ===============================
     @Bean
     public LifeTraceRegistryContract lifeTraceRegistryContract(
@@ -79,10 +83,15 @@ public class Web3Config {
             Credentials credentials,
             ContractGasProvider gasProvider
     ) {
+
+        // ✅ IMPORTANT FIX
+        TransactionManager txManager =
+                new RawTransactionManager(web3j, credentials, chainId);
+
         return LifeTraceRegistryContract.load(
                 contractAddress,
                 web3j,
-                credentials,
+                txManager,
                 gasProvider
         );
     }
