@@ -3,137 +3,117 @@ package com.lifetrace.backend.service;
 import com.lifetrace.backend.model.Organ;
 import com.lifetrace.backend.model.Recipient;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
-import com.resend.Resend;
-import com.resend.services.emails.model.*;
-import com.resend.services.emails.model.CreateEmailOptions;
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    // 🔥 RESEND CLIENT
-    private final Resend resend = new Resend(System.getenv("RESEND_API_KEY"));
+    @Value("${BREVO_API_KEY}")
+    private String API_KEY;
 
-    // ===============================
-    // COMMON SEND METHOD
-    // ===============================
     private void sendEmail(String to, String subject, String html) {
         try {
-            CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("onboarding@resend.dev") // default sender
-                    .to(to)
-                    .subject(subject)
-                    .html(html)
-                    .build();
+            String url = "https://api.brevo.com/v3/smtp/email";
 
-            resend.emails().send(params);
+            RestTemplate restTemplate = new RestTemplate();
 
-            System.out.println("Email sent successfully to: " + to);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("accept", "application/json");
+            headers.set("api-key", API_KEY);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+
+            Map<String, String> sender = new HashMap<>();
+            sender.put("email", "harshalmulay1039@gmail.com"); // MUST be verified
+            sender.put("name", "LifeTrace");
+
+            Map<String, String> toMap = new HashMap<>();
+            toMap.put("email", to);
+
+            body.put("sender", sender);
+            body.put("to", new Object[]{toMap});
+            body.put("subject", subject);
+            body.put("htmlContent", html);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            restTemplate.postForEntity(url, request, String.class);
+
+            System.out.println("Email sent to: " + to);
 
         } catch (Exception e) {
-            System.out.println("Email failed for: " + to);
+            System.out.println("Email failed: " + to);
             e.printStackTrace();
         }
     }
 
-    // ===============================
-    // MATCH EMAIL
-    // ===============================
-    @Async
-    public void sendHospitalMatchEmail(String email, Organ organ, Recipient recipient) {
-        sendEmail(
-                email,
-                "LifeTrace - Organ Match Found",
-                "<h3>Organ Match Found</h3>" +
-                        "<p>Organ: " + organ.getOrganType() + "</p>" +
-                        "<p>Blood Group: " + organ.getBloodGroup() + "</p>" +
-                        "<p>Recipient ID: " + recipient.getId() + "</p>"
-        );
-    }
-
-    // ===============================
-    // DISPATCH
-    // ===============================
-    @Async
-    public void sendDispatchEmail(String email, Long caseId) {
-        sendEmail(
-                email,
-                "LifeTrace - Organ Dispatched",
-                "<p>Case ID: " + caseId + "</p><p>Organ dispatched.</p>"
-        );
-    }
-
-    // ===============================
-    // RECEIVE
-    // ===============================
-    @Async
-    public void sendReceiveEmail(String email, Long caseId) {
-        sendEmail(
-                email,
-                "LifeTrace - Organ Received",
-                "<p>Case ID: " + caseId + "</p><p>Organ received.</p>"
-        );
-    }
-
-    // ===============================
-    // SURGERY RESULT
-    // ===============================
-    @Async
-    public void sendSurgeryResultEmail(String email, Long caseId, boolean success) {
-
-        String result = success ? "SUCCESSFUL" : "FAILED";
-
-        sendEmail(
-                email,
-                "LifeTrace - Surgery Result",
-                "<p>Case ID: " + caseId + "</p><p>Result: " + result + "</p>"
-        );
-    }
-
-    // ===============================
-    // OTP
-    // ===============================
+    // ================= OTP =================
     @Async
     public void sendOtpEmail(String email, String otp) {
-        sendEmail(
-                email,
+        sendEmail(email,
                 "LifeTrace - OTP",
-                "<h2>Your OTP: " + otp + "</h2>"
-        );
+                "<h2>Your OTP: " + otp + "</h2>");
     }
 
-    // ===============================
-    // AUTH EMAILS
-    // ===============================
+    // ================= MATCH =================
+    @Async
+    public void sendHospitalMatchEmail(String email, Organ organ, Recipient recipient) {
+        sendEmail(email,
+                "Organ Match Found",
+                "<p>Organ: " + organ.getOrganType() + "</p>" +
+                        "<p>Blood: " + organ.getBloodGroup() + "</p>" +
+                        "<p>Recipient ID: " + recipient.getId() + "</p>");
+    }
+
+    @Async
+    public void sendDispatchEmail(String email, Long caseId) {
+        sendEmail(email,
+                "Organ Dispatched",
+                "<p>Case ID: " + caseId + "</p>");
+    }
+
+    @Async
+    public void sendReceiveEmail(String email, Long caseId) {
+        sendEmail(email,
+                "Organ Received",
+                "<p>Case ID: " + caseId + "</p>");
+    }
+
+    @Async
+    public void sendSurgeryResultEmail(String email, Long caseId, boolean success) {
+        sendEmail(email,
+                "Surgery Result",
+                "<p>Case ID: " + caseId + "</p>" +
+                        "<p>Status: " + (success ? "SUCCESS" : "FAILED") + "</p>");
+    }
+
     @Async
     public void sendRegistrationSuccessEmail(String email) {
-        sendEmail(
-                email,
+        sendEmail(email,
                 "Registration Successful",
-                "<p>Your account is created successfully.</p>"
-        );
+                "<p>Your account created successfully.</p>");
     }
 
     @Async
     public void sendLoginAlertEmail(String email) {
-        sendEmail(
-                email,
+        sendEmail(email,
                 "Login Alert",
-                "<p>You logged in successfully.</p>"
-        );
+                "<p>You logged in successfully.</p>");
     }
 
-    // ===============================
-    // HOSPITAL STATUS
-    // ===============================
     @Async
     public void sendHospitalStatusEmail(String email, String status) {
-        sendEmail(
-                email,
-                "Hospital Status Update",
-                "<p>Your hospital is now: <b>" + status + "</b></p>"
-        );
+        sendEmail(email,
+                "Hospital Status",
+                "<p>Status: " + status + "</p>");
     }
 }
