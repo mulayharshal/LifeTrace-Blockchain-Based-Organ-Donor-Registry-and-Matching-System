@@ -54,12 +54,12 @@ public class Web3Config {
 
             @Override
             public BigInteger getGasPrice(String contractFunc) {
-                return BigInteger.valueOf(20_000_000_000L);
+                return BigInteger.valueOf(30_000_000_000L);
             }
 
             @Override
             public BigInteger getGasPrice() {
-                return BigInteger.valueOf(20_000_000_000L);
+                return BigInteger.valueOf(30_000_000_000L);
             }
 
             @Override
