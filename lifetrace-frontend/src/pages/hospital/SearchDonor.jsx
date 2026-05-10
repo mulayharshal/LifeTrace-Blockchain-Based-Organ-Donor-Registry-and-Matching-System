@@ -108,7 +108,20 @@ export default function SearchDonor() {
             )}
             <div className="md:col-span-2 mt-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
                <p className="text-xs text-slate-500 mb-1">Blockchain Hash / IPFS CID Reference</p>
-               <p className="font-mono text-xs text-slate-700 break-all">{donor.consentHash || donor.transactionHash || '0x0000000000000000000000000000000000000000000000000000000000000000'}</p>
+               {(() => {
+                 const hash = donor.consentHash || donor.transactionHash || '0x0000000000000000000000000000000000000000000000000000000000000000';
+                 const isZeroHash = hash === '0x0000000000000000000000000000000000000000000000000000000000000000';
+                 if (isZeroHash) return <p className="font-mono text-xs text-slate-700 break-all">{hash}</p>;
+                 
+                 const isBlockchain = hash.startsWith('0x');
+                 const url = isBlockchain ? `https://amoy.polygonscan.com/tx/${hash}` : `https://gateway.pinata.cloud/ipfs/${hash}`;
+                 
+                 return (
+                   <a href={url} target="_blank" rel="noreferrer" className="font-mono text-xs text-brand-600 hover:text-brand-800 hover:underline break-all">
+                     {hash}
+                   </a>
+                 );
+               })()}
             </div>
 
             {/* Hospital Progressive Actions Block */}

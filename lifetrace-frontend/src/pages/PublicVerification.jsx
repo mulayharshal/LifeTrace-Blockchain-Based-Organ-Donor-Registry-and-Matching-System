@@ -17,7 +17,11 @@ export default function PublicVerification() {
   const handleVerify = (e) => {
     e.preventDefault();
     if (!caseId) return;
-    setShowTimeline(true);
+    if (caseId.length > 5) {
+      window.open(`https://amoy.polygonscan.com/tx/${caseId}`, '_blank');
+    } else {
+      setShowTimeline(true);
+    }
   };
 
   const handleClose = () => {

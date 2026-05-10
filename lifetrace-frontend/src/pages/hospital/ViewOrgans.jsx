@@ -127,7 +127,7 @@ export default function ViewOrgans() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       {organ.blockchainTxHash ? (
-                        <a href={`https://sepolia.etherscan.io/tx/${organ.blockchainTxHash}`} target="_blank" rel="noreferrer" className="flex items-center text-brand-600 hover:text-brand-800 hover:underline">
+                        <a href={`https://amoy.polygonscan.com/tx/${organ.blockchainTxHash}`} target="_blank" rel="noreferrer" className="flex items-center text-brand-600 hover:text-brand-800 hover:underline">
                           <Hash className="w-3.5 h-3.5 mr-1" /> View TX
                         </a>
                       ) : (
